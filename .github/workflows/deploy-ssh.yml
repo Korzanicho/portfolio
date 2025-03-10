@@ -1,4 +1,4 @@
-name: Deploy to atthost server
+name: Deploy to OVH server
 on:
   push:
     branches:
@@ -10,21 +10,19 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      BASE_PATH: Portfolio-AdrianKorzan
+      BASE_PATH: portfolio
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2.3.4
-
-      - name: Remove unused files
+      - name: Setup SSH Key
         run: |
-          rm -R scss
-      - name: Deploy
-        uses: kostya-ten/ssh-server-deploy@v4
-        with:
-          host: ${{ secrets.ATTHOST_SHH_HOST }}
-          port: 6022
-          username: ${{ secrets.ATTHOST_SSH_USER }}
-          password: ${{ secrets.ATTHOST_SSH_PASSWORD }}
-          scp_source: ./
-          scp_target: ./websites/Portfolio-AdrianKorzan
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          eval $(ssh-agent -s)
+          echo "${{ secrets.PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-add ~/.ssh/id_rsa
+          ssh-keyscan -H 146.59.87.169 >> ~/.ssh/known_hosts
+
+      - name: Upload project files
+        run: |
+          rsync -avz --delete ./ ciuser@146.59.87.169:/var/www/websites/production/portfolio/
