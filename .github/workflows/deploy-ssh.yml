@@ -13,16 +13,20 @@ jobs:
       BASE_PATH: portfolio
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          eval $(ssh-agent -s)
-          echo "${{ secrets.PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
+          echo "${{ secrets.PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_rsa
           ssh-keyscan -H 146.59.87.169 >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
       - name: Upload project files
         run: |
-          rsync -avz --delete ./ ciuser@146.59.87.169:/var/www/websites/production/portfolio/
+          rsync -avz --delete --exclude=".git" --exclude=".github" ./ ciuser@146.59.87.169:/var/www/websites/production/portfolio/
