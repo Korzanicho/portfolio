@@ -1,0 +1,37 @@
+name: Deploy to GH Pages
+# on - kiedy akcja ma się wykonać
+on:
+  push:
+    branches:
+      - "master"
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      BASE_PATH: portfolio
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.3.4
+
+      - name: Remove unused files
+        run: |
+          rm -R .idea
+          rm -R scss
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          eval $(ssh-agent -s)
+          echo "${{ secrets.PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-add ~/.ssh/id_rsa
+          ssh-keyscan -H 146.59.87.169 >> ~/.ssh/known_hosts
+
+      - name: Upload project files
+        run: |
+          rsync -avz --delete ./ ciuser@146.59.87.169:/var/www/websites/production/portfolio/
